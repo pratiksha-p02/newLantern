@@ -8,10 +8,16 @@ import logging
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# embedding cache
+# Lazy model + cache
+model = None
 embedding_cache = {}
+
+def get_model():
+    global model
+    if model is None:
+        logging.info("Loading model...")
+        model = SentenceTransformer("paraphrase-MiniLM-L3-v2")  # lightweight
+    return model
 
 # ----------------- Models -----------------
 class Study(BaseModel):
@@ -60,18 +66,18 @@ def is_relevant(current: Study, prior: Study) -> bool:
     curr_text = current.study_description
     prior_text = prior.study_description
 
-    # rule signals
+    # Rule-based signals
     curr_mod = extract_modality(curr_text)
     prior_mod = extract_modality(prior_text)
 
     curr_body = extract_body_part(curr_text)
     prior_body = extract_body_part(prior_text)
 
-    # strong rule match
+    # Strong rule match
     if curr_mod == prior_mod and curr_body == prior_body:
         return True
 
-    # semantic similarity
+    # Semantic similarity
     emb1 = get_embedding(curr_text)
     emb2 = get_embedding(prior_text)
     sim_score = util.cos_sim(emb1, emb2).item()
@@ -99,11 +105,12 @@ def predict(request: RequestModel):
         for prior in case.prior_studies:
             all_texts.add(prior.study_description)
 
-    # -------- Batch encode (FAST) --------
+    # -------- Batch encode (safe + fast) --------
     new_texts = [t for t in all_texts if t not in embedding_cache]
 
     if new_texts:
-        embeddings = model.encode(new_texts, batch_size=64)
+        model_instance = get_model()
+        embeddings = model_instance.encode(new_texts, batch_size=32)  # safe batch
 
         for text, emb in zip(new_texts, embeddings):
             embedding_cache[text] = emb
