@@ -72,18 +72,11 @@ def is_relevant(current: Study, prior: Study) -> bool:
     if curr_body == prior_body and curr_body != "OTHER":
         return True
 
-    # Additional simple checks: if descriptions share any key terms
+    # Additional simple checks: if descriptions share key terms
     curr_words = set(curr_text.upper().split())
     prior_words = set(prior_text.upper().split())
     common_words = curr_words & prior_words
-    if len(common_words) > 0:  # very lenient - any common word
-        return True
-
-    # Fallback: if both are medical imaging studies and descriptions are similar length
-    medical_keywords = {"STUDY", "EXAM", "SCAN", "IMAGING", "DIAGNOSTIC", "RADIOLOGY", "XRAY", "CT", "MRI", "ULTRASOUND"}
-    curr_has_medical = any(word in curr_text.upper() for word in medical_keywords)
-    prior_has_medical = any(word in prior_text.upper() for word in medical_keywords)
-    if curr_has_medical and prior_has_medical and abs(len(curr_text) - len(prior_text)) < 100:
+    if len(common_words) > 1:  # back to >1 for better precision
         return True
 
     return False
