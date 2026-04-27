@@ -72,11 +72,12 @@ def is_relevant(current: Study, prior: Study) -> bool:
     if curr_body == prior_body and curr_body != "OTHER":
         return True
 
-    # Additional simple checks: if descriptions share key terms
-    curr_words = set(curr_text.upper().split())
-    prior_words = set(prior_text.upper().split())
+    # Additional simple checks: if descriptions share key terms (better preprocessing)
+    import re
+    curr_words = set(re.findall(r'\b\w+\b', curr_text.upper()))
+    prior_words = set(re.findall(r'\b\w+\b', prior_text.upper()))
     common_words = curr_words & prior_words
-    if len(common_words) > 1:  # back to >1 for better precision
+    if len(common_words) > 0:  # any common word after punctuation removal
         return True
 
     return False
