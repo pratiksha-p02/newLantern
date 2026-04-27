@@ -38,31 +38,28 @@ Returns one prediction per prior study:
 
 ##  Approach
 
-This solution uses a **hybrid method** combining:
+This solution uses a **rule-based method**:
 
-### 1. Rule Based Signals
+### Rule Based Signals
 
-* Modality matching (MRI, CT, XRAY)
-* Body part matching (brain, chest, abdomen)
-
-### 2. Semantic Similarity
-
-* Sentence embeddings using `sentence-transformers`
-* Cosine similarity between study descriptions
+* Modality matching (MRI, CT, XRAY, US, PET)
+* Body part matching (BRAIN, CHEST, ABDOMEN, SPINE, PELVIS)
+* Word overlap check for additional relevance
 
 ### Decision Logic
 
-* Strong rule match → relevant
-* Otherwise, use similarity threshold (0.7)
+* Match on modality + body part → relevant
+* Otherwise, check word overlap threshold
 
 ---
 
 ## ⚡ Performance Optimizations
 
-* Batch embedding of all study descriptions
-* In memory caching to avoid recomputation
-* Single model load at startup
-* No external API calls
+* Lightweight rule-based matching with no ML models
+* Fast string processing and keyword extraction
+* Minimal memory footprint (~50MB)
+* No external dependencies beyond FastAPI
+* Sub-second response times
 
 ---
 
