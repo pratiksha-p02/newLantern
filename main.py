@@ -82,22 +82,26 @@ def is_relevant(current: Study, prior: Study) -> bool:
 # ----------------- Endpoint -----------------
 @app.post("/predict")
 def predict(request: RequestModel):
-    predictions = []
+    try:
+        predictions = []
 
-    logging.info(f"Received {len(request.cases)} cases")
+        logging.info(f"Received {len(request.cases)} cases")
 
-    total_priors = sum(len(c.prior_studies) for c in request.cases)
-    logging.info(f"Total priors: {total_priors}")
+        total_priors = sum(len(c.prior_studies) for c in request.cases)
+        logging.info(f"Total priors: {total_priors}")
 
-    # -------- Prediction loop --------
-    for case in request.cases:
-        for prior in case.prior_studies:
-            predictions.append({
-                "case_id": case.case_id,
-                "study_id": prior.study_id,
-                "predicted_is_relevant": is_relevant(
-                    case.current_study, prior
-                )
-            })
+        # -------- Prediction loop --------
+        for case in request.cases:
+            for prior in case.prior_studies:
+                predictions.append({
+                    "case_id": case.case_id,
+                    "study_id": prior.study_id,
+                    "predicted_is_relevant": is_relevant(
+                        case.current_study, prior
+                    )
+                })
 
-    return {"predictions": predictions}
+        return {"predictions": predictions}
+    except Exception as e:
+        logging.error(f"Error processing request: {str(e)}")
+        return {"error": "Internal server error", "details": str(e)}
