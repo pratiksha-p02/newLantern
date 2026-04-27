@@ -1,23 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
-from sentence_transformers import SentenceTransformer, util
 import logging
 
 # ----------------- Setup -----------------
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
-
-# Lazy model + cache
-model = None
-embedding_cache = {}
-
-def get_model():
-    global model
-    if model is None:
-        logging.info("Loading model...")
-        model = SentenceTransformer("paraphrase-MiniLM-L3-v2")  # lightweight
-    return model
 
 # ----------------- Models -----------------
 class Study(BaseModel):
@@ -47,20 +35,25 @@ def extract_modality(text: str):
         return "CT"
     if "XRAY" in text or "X-RAY" in text:
         return "XRAY"
+    if "ULTRASOUND" in text or "US" in text:
+        return "US"
+    if "PET" in text:
+        return "PET"
     return "OTHER"
 
 def extract_body_part(text: str):
     text = text.upper()
-    if "BRAIN" in text or "HEAD" in text:
+    if "BRAIN" in text or "HEAD" in text or "NEURO" in text:
         return "BRAIN"
-    if "CHEST" in text:
+    if "CHEST" in text or "THORAX" in text:
         return "CHEST"
-    if "ABDOMEN" in text:
+    if "ABDOMEN" in text or "ABDOMINAL" in text:
         return "ABDOMEN"
+    if "SPINE" in text:
+        return "SPINE"
+    if "PELVIS" in text:
+        return "PELVIS"
     return "OTHER"
-
-def get_embedding(text: str):
-    return embedding_cache[text]
 
 def is_relevant(current: Study, prior: Study) -> bool:
     curr_text = current.study_description
@@ -77,12 +70,11 @@ def is_relevant(current: Study, prior: Study) -> bool:
     if curr_mod == prior_mod and curr_body == prior_body:
         return True
 
-    # Semantic similarity
-    emb1 = get_embedding(curr_text)
-    emb2 = get_embedding(prior_text)
-    sim_score = util.cos_sim(emb1, emb2).item()
-
-    if sim_score > 0.7:
+    # Additional simple checks: if descriptions share key terms
+    curr_words = set(curr_text.upper().split())
+    prior_words = set(prior_text.upper().split())
+    common_words = curr_words & prior_words
+    if len(common_words) > 2:  # arbitrary threshold
         return True
 
     return False
@@ -96,24 +88,6 @@ def predict(request: RequestModel):
 
     total_priors = sum(len(c.prior_studies) for c in request.cases)
     logging.info(f"Total priors: {total_priors}")
-
-    # -------- Collect all unique texts --------
-    all_texts = set()
-
-    for case in request.cases:
-        all_texts.add(case.current_study.study_description)
-        for prior in case.prior_studies:
-            all_texts.add(prior.study_description)
-
-    # -------- Batch encode (safe + fast) --------
-    new_texts = [t for t in all_texts if t not in embedding_cache]
-
-    if new_texts:
-        model_instance = get_model()
-        embeddings = model_instance.encode(new_texts, batch_size=32)  # safe batch
-
-        for text, emb in zip(new_texts, embeddings):
-            embedding_cache[text] = emb
 
     # -------- Prediction loop --------
     for case in request.cases:
