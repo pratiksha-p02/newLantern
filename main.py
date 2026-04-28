@@ -55,9 +55,65 @@ def extract_body_part(text: str):
         return "PELVIS"
     return "OTHER"
 
+def normalize_text(text: str) -> str:
+    text = text.upper()
+    # Normalize modalities
+    text = text.replace("MAGNETIC RESONANCE IMAGING", "MRI")
+    text = text.replace("MAGNETIC RESONANCE", "MRI")
+    text = text.replace("COMPUTED TOMOGRAPHY", "CT")
+    text = text.replace("CAT SCAN", "CT")
+    text = text.replace("MULTISLICE CT", "CT")
+    text = text.replace("X-RAY", "XRAY")
+    text = text.replace("PLAIN FILM", "XRAY")
+    text = text.replace("RADIOGRAPH", "XRAY")
+    text = text.replace("FLUOROSCOPY", "XRAY")
+    text = text.replace("ROENTGEN", "XRAY")
+    text = text.replace("ULTRASOUND", "US")
+    text = text.replace("SONO", "US")
+    text = text.replace("ECHO", "US")
+    text = text.replace("DOPPLER", "US")
+    text = text.replace("POSITRON EMISSION TOMOGRAPHY", "PET")
+    text = text.replace("POSITRON EMISSION", "PET")
+    # Normalize body parts
+    text = text.replace("THORAX", "CHEST")
+    text = text.replace("THORACIC", "CHEST")
+    text = text.replace("LUNG", "CHEST")
+    text = text.replace("PULMONARY", "CHEST")
+    text = text.replace("HEART", "CHEST")
+    text = text.replace("CARDIAC", "CHEST")
+    text = text.replace("MEDIASTINUM", "CHEST")
+    text = text.replace("RIB", "CHEST")
+    text = text.replace("STERNUM", "CHEST")
+    text = text.replace("ABDOMINAL", "ABDOMEN")
+    text = text.replace("GASTROINTESTINAL", "ABDOMEN")
+    text = text.replace("GI", "ABDOMEN")
+    text = text.replace("LIVER", "ABDOMEN")
+    text = text.replace("KIDNEY", "ABDOMEN")
+    text = text.replace("PANCREAS", "ABDOMEN")
+    text = text.replace("SPLEEN", "ABDOMEN")
+    text = text.replace("BOWEL", "ABDOMEN")
+    text = text.replace("STOMACH", "ABDOMEN")
+    text = text.replace("INTESTINE", "ABDOMEN")
+    text = text.replace("VERTEBRAL", "SPINE")
+    text = text.replace("SPINAL", "SPINE")
+    text = text.replace("DISC", "SPINE")
+    text = text.replace("VERTEBRA", "SPINE")
+    text = text.replace("LUMBAR", "SPINE")
+    text = text.replace("CERVICAL", "SPINE")
+    text = text.replace("THORACIC", "SPINE")  # Note: thoracic can be chest or spine, but context matters
+    text = text.replace("SACRAL", "SPINE")
+    text = text.replace("PELVIC", "PELVIS")
+    text = text.replace("BLADDER", "PELVIS")
+    text = text.replace("PROSTATE", "PELVIS")
+    text = text.replace("UTERUS", "PELVIS")
+    text = text.replace("OVARY", "PELVIS")
+    text = text.replace("HIP", "PELVIS")
+    text = text.replace("FEMUR", "PELVIS")
+    return text
+
 def is_relevant(current: Study, prior: Study) -> bool:
-    curr_text = current.study_description
-    prior_text = prior.study_description
+    curr_text = normalize_text(current.study_description)
+    prior_text = normalize_text(prior.study_description)
 
     # Rule-based signals
     curr_mod = extract_modality(curr_text)
